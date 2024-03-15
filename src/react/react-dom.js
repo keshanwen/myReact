@@ -16,7 +16,11 @@ export function createDOM(vdom) {
   if (type === REACT_TEXT) {
     dom = document.createTextNode(props)
   } else if (typeof type === 'function') {
-    return mountFunctionComponent(vdom)
+    if (type.isReactComponent) {
+      return mountClassComponent(vdom)
+    } else {
+      return mountFunctionComponent(vdom)
+    }
   } else {
     dom = document.createElement(type)
   }
@@ -64,6 +68,13 @@ function mountFunctionComponent(vdom) {
   return createDOM(renderVdom)
 }
 
+function mountClassComponent(vdom) {
+  let { type: ClassComponent, props } = vdom
+  let classInstance = new ClassComponent(props)
+  let renderVdom = classInstance.render()
+  let dom = createDOM(renderVdom)
+  return dom
+}
 
 const ReactDOM = {
   render
