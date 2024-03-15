@@ -45,6 +45,8 @@ function updateProps(dom, oldProps = {}, newProps = {}) {
       for (let attr in styleObj) {
         dom.style[attr] = styleObj[attr]
       }
+    } else if (/^on[A-Z].*/.test(key)) {
+      dom[key.toLocaleLowerCase()] = newProps[key]
     } else {
       dom[key] = newProps[key]
     }
@@ -65,6 +67,7 @@ function reconcileChildren(childrenVdom, parentDOM) {
 function mountFunctionComponent(vdom) {
   let { type: functionComponent, props } = vdom
   let renderVdom = functionComponent(props)
+  vdom.oldRenderVdom = renderVdom // 将 vdom 属性记录下来
   return createDOM(renderVdom)
 }
 
@@ -72,8 +75,26 @@ function mountClassComponent(vdom) {
   let { type: ClassComponent, props } = vdom
   let classInstance = new ClassComponent(props)
   let renderVdom = classInstance.render()
+  classInstance.oldRenderVdom = renderVdom // 将 vdom 属性记录下来
   let dom = createDOM(renderVdom)
   return dom
+}
+
+export function findDOM(vdom) {
+  if (!vdom) return null
+  if (vdom.dom) {
+    return vdom.dom
+  } else {
+    let renderVdom = vdom.oldRenderVdom
+    return findDOM(renderVdom)
+  }
+}
+
+export function compareTwoVdom(parentDOM, oldVdom, newVdom) {
+    // 这里先全部替换
+    let oldDOM = findDOM(oldVdom);
+    let newDOM = createDOM(newVdom);
+    parentDOM.replaceChild(newDOM, oldDOM);
 }
 
 const ReactDOM = {
