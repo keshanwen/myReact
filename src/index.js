@@ -4,12 +4,19 @@ import React from './react/react';
 import ReactDOM from './react/react-dom';
 
 
-let element1 = (
-  <div className="title" style={{ color: "red" }}>
-    <span>hello</span>, i am kebi
-  </div>
-);
+
 // console.log(JSON.stringify(element1, null, 2));
 
 
-ReactDOM.render(element1, document.getElementById('root'));
+function FunctionComponent2() {
+  return <div>i am Component2</div>
+}
+
+function FunctionComponent(props) {
+  return <FunctionComponent2></FunctionComponent2>
+  // return <div className="title" style={{ color: 'red' }}><span>{props.name}</span>{props.children} i like { props.like }</div>;
+}
+let element = <FunctionComponent name="hello" like="basketball">world</FunctionComponent>
+
+
+ReactDOM.render(element, document.getElementById('root'));

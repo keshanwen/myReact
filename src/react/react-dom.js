@@ -15,6 +15,8 @@ export function createDOM(vdom) {
   let dom
   if (type === REACT_TEXT) {
     dom = document.createTextNode(props)
+  } else if (typeof type === 'function') {
+    return mountFunctionComponent(vdom)
   } else {
     dom = document.createElement(type)
   }
@@ -54,6 +56,12 @@ function reconcileChildren(childrenVdom, parentDOM) {
   for (let i = 0; i < childrenVdom.length;i++) {
     mount(childrenVdom[i], parentDOM)
   }
+}
+
+function mountFunctionComponent(vdom) {
+  let { type: functionComponent, props } = vdom
+  let renderVdom = functionComponent(props)
+  return createDOM(renderVdom)
 }
 
 
