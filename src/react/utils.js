@@ -4,3 +4,8 @@ export function wrapToVdom(element) {
     ? { type: REACT_TEXT, props: element }
     : element;
 }
+
+
+export function isFunction(obj) {
+  return typeof obj === 'function'
+}
