@@ -1,4 +1,4 @@
-import { REACT_TEXT } from "./constants";
+import { REACT_TEXT, REACT_FORWARD_REF_TYPE } from "./constants";
 import { addEvent } from './event'
 
 function render(vdom, container) {
@@ -8,13 +8,17 @@ function render(vdom, container) {
 
 export function mount(vdom, container) {
   let newDom = createDOM(vdom)
-  container.appendChild(newDom)
+  if (newDom) {
+    container.appendChild(newDom)
+  }
 }
 
 export function createDOM(vdom) {
-  let { type, props } = vdom
+  let { type, props, ref } = vdom
   let dom
-  if (type === REACT_TEXT) {
+  if (type && type.$$typeof === REACT_FORWARD_REF_TYPE) {
+    return mountForwardComponent(vdom)
+  } else if (type === REACT_TEXT) {
     dom = document.createTextNode(props)
   } else if (typeof type === 'function') {
     if (type.isReactComponent) {
@@ -34,6 +38,7 @@ export function createDOM(vdom) {
     }
   }
   vdom.dom = dom
+  if (ref) ref.current = dom
   return dom
 }
 
@@ -66,6 +71,13 @@ function reconcileChildren(childrenVdom, parentDOM) {
   }
 }
 
+function mountForwardComponent(vdom) {
+  let { type, props, ref } = vdom
+  let renderVdom = type.render(props, ref)
+  vdom.oldRenderVdom = renderVdom
+  return createDOM(renderVdom)
+}
+
 function mountFunctionComponent(vdom) {
   let { type: functionComponent, props } = vdom
   let renderVdom = functionComponent(props)
@@ -74,8 +86,9 @@ function mountFunctionComponent(vdom) {
 }
 
 function mountClassComponent(vdom) {
-  let { type: ClassComponent, props } = vdom
+  let { type: ClassComponent, props, ref } = vdom
   let classInstance = new ClassComponent(props)
+  if (ref) ref.current = classInstance
   let renderVdom = classInstance.render()
   classInstance.oldRenderVdom = renderVdom // 将 vdom 属性记录下来
   let dom = createDOM(renderVdom)

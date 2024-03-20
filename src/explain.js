@@ -26,4 +26,21 @@
   使用 JSX 语法时你需要传入一个函数作为事件处理函数，而不是一个字符串
   你不能通过返回 false 的方式阻止默认行为。你必须显式的使用preventDefault
 
+
+  Refs 提供了一种方式，允许我们访问 DOM 节点或在 render 方法中创建的 React 元素
+
+   为 DOM 元素添加 ref
+   可以使用 ref 去存储 DOM 节点的引用
+   当 ref 属性用于 HTML 元素时，构造函数中使用 React.createRef() 创建的 ref 接收底层 DOM 元素作为其 current 属性
+
+
+   为 class 组件添加 Ref
+   当 ref 属性用于自定义 class 组件时，ref 对象接收组件的挂载实例作为其 current 属性
+
+   Ref转发
+
+  你不能在函数组件上使用 ref 属性，因为他们没有实例
+  Ref 转发是一项将 ref 自动地通过组件传递到其一子组件的技巧
+  Ref 转发允许某些组件接收 ref，并将其向下传递给子组件
+
 */

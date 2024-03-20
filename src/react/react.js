@@ -1,5 +1,5 @@
 import { wrapToVdom } from './utils'
-import { REACT_ELEMENT } from './constants'
+import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE } from './constants'
 import { Component } from './component'
 
 function createElement(type, config, children) {
@@ -29,9 +29,26 @@ function createElement(type, config, children) {
   }
 }
 
+function createRef() {
+  return {
+    current: null
+  }
+}
+
+function forwardRef(render) {
+  const elementType = {
+    $$typeof: REACT_FORWARD_REF_TYPE,
+    render: render
+  }
+
+  return elementType
+}
+
 const React = {
   createElement,
-  Component
+  Component,
+  createRef,
+  forwardRef
 }
 
 export default React
