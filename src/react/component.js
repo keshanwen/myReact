@@ -57,9 +57,21 @@ class Updater {
 }
 
 function shouldUpdate(classInstance, nextProps, nextState) {
-  if (nextProps) classInstance.props = nextProps
+ /*  if (nextProps) classInstance.props = nextProps
   classInstance.state = nextState
-  classInstance.forceUpdate()
+  classInstance.forceUpdate() */
+  let willUpdate = true
+  if (classInstance.shouldComponentUpdate && !classInstance.shouldComponentUpdate(nextProps, nextState)) {
+    willUpdate = false
+  }
+  if (willUpdate && classInstance.componentWillUpdate) {
+    classInstance.componentWillUpdate()
+  }
+  if (nextProps) {
+    classInstance.props = nextProps
+  }
+  classInstance.state = nextState
+  if (willUpdate) classInstance.forceUpdate()
 }
 
 export class Component {
@@ -80,6 +92,9 @@ export class Component {
     let newRenderVdom = this.render()
     compareTwoVdom(oldDOM.parentNode, oldRenderVdom, newRenderVdom)
     this.oldRenderVdom = newRenderVdom
+    if (this.componentDidUpdate) {
+      this.componentDidUpdate(this.props, this.state);
+    }
   }
 }
 

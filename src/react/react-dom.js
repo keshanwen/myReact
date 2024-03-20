@@ -10,6 +10,7 @@ export function mount(vdom, container) {
   let newDom = createDOM(vdom)
   if (newDom) {
     container.appendChild(newDom)
+    if (newDom.componentDidMount) newDom.componentDidMount()
   }
 }
 
@@ -89,9 +90,13 @@ function mountClassComponent(vdom) {
   let { type: ClassComponent, props, ref } = vdom
   let classInstance = new ClassComponent(props)
   if (ref) ref.current = classInstance
+  if (classInstance.componentWillMount) classInstance.componentWillMount();
   let renderVdom = classInstance.render()
   classInstance.oldRenderVdom = renderVdom // 将 vdom 属性记录下来
   let dom = createDOM(renderVdom)
+  if (classInstance.componentDidMount) {
+    dom.componentDidMount = classInstance.componentDidMount.bind(classInstance);
+  }
   return dom
 }
 
