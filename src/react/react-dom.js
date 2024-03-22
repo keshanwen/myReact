@@ -100,12 +100,12 @@ function mountClassComponent(vdom) {
 }
 
 export function findDOM(vdom) {
-  if (!vdom) return null
-  if (vdom.dom) {
-    return vdom.dom
+  if (!vdom) return null;
+  if (vdom.dom) {//vdom={type:'h1'}
+    return vdom.dom;
   } else {
-    let renderVdom = vdom.oldRenderVdom
-    return findDOM(renderVdom)
+    let renderVdom = vdom.classInstance ? vdom.classInstance.oldRenderVdom : vdom.oldRenderVdom;
+    return findDOM(renderVdom);
   }
 }
 

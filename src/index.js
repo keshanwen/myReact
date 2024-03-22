@@ -42,8 +42,8 @@ class Counter extends React.Component { // 他会比较两个状态相等就不�
     return (
       <div>
         <p>{this.state.number}</p>
-        <ChildCounter count={this.state.number} ></ChildCounter>
-      {/*   {this.state.number === 4 ? null : <ChildCounter count={this.state.number} />} */}
+        {/* <ChildCounter count={this.state.number} ></ChildCounter> */}
+        {this.state.number === 4 ? null : <ChildCounter count={this.state.number} />}
         <button onClick={this.handleClick}>+</button>
       </div>
     )
