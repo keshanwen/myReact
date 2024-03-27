@@ -1,5 +1,6 @@
-import { REACT_TEXT, REACT_FORWARD_REF_TYPE } from "./constants";
+import { REACT_TEXT, REACT_FORWARD_REF_TYPE, PLACEMENT, MOVE, REACT_FRAGMENT } from "./constants";
 import { addEvent } from './event'
+import React from "./react";
 
 function render(vdom, container) {
   mount(vdom, container)
@@ -21,6 +22,8 @@ export function createDOM(vdom) {
     return mountForwardComponent(vdom)
   } else if (type === REACT_TEXT) {
     dom = document.createTextNode(props)
+  } else if (type === REACT_FRAGMENT) {
+    dom = document.createDocumentFragment()
   } else if (typeof type === 'function') {
     if (type.isReactComponent) {
       return mountClassComponent(vdom)
@@ -33,6 +36,7 @@ export function createDOM(vdom) {
   if (props) {
     updateProps(dom, {}, props)
     if (typeof props.children == 'object' && props.children.type) {
+      props.children.mountIndex = 0;
       mount(props.children, dom)
     } else if (Array.isArray(props.children)) {
       reconcileChildren(props.children, dom)
@@ -68,6 +72,7 @@ function updateProps(dom, oldProps = {}, newProps = {}) {
 
 function reconcileChildren(childrenVdom, parentDOM) {
   for (let i = 0; i < childrenVdom.length; i++) {
+    childrenVdom[i].mountIndex = i;
     mount(childrenVdom[i], parentDOM)
   }
 }
@@ -163,6 +168,9 @@ function updateElement(oldVdom, newVdom) {
     let currentDOM = newVdom.dom = findDOM(oldVdom);
     updateProps(currentDOM, oldVdom.props, newVdom.props);
     updateChildren(currentDOM, oldVdom.props.children, newVdom.props.children);
+  } else if (oldVdom.type === REACT_FRAGMENT) {
+    let currentDOM = newVdom.dom = findDOM(oldVdom)
+    updateChildren(currentDOM,oldVdom.props.children, newVdom.props.children)
   } else if (typeof oldVdom.type === 'function') {
     if (oldVdom.type.isReactComponent) {
       updateClassComponent(oldVdom, newVdom);
@@ -189,15 +197,69 @@ function updateClassComponent(oldVdom, newVdom) {
   classInstance.updater.emitUpdate(newVdom.props);
 }
 
+
 function updateChildren(parentDOM, oldVChildren, newVChildren) {
-  oldVChildren = (Array.isArray(oldVChildren) ? oldVChildren : oldVChildren ? [oldVChildren] : []).filter(item => item);
-  newVChildren = (Array.isArray(newVChildren) ? newVChildren : newVChildren ? [newVChildren] : []).filter(item => item);
-  let maxLength = Math.max(oldVChildren.length, newVChildren.length);
-  for (let i = 0; i < maxLength; i++) {
-    let nextVdom = oldVChildren.find((item, index) => index > i && item && findDOM(item));
-    compareTwoVdom(parentDOM, oldVChildren[i], newVChildren[i], nextVdom && findDOM(nextVdom));
-  }
+  oldVChildren = (Array.isArray(oldVChildren) ? oldVChildren : oldVChildren ? [oldVChildren] : []).filter(item => item) || [];
+  newVChildren = (Array.isArray(newVChildren) ? newVChildren : newVChildren ? [newVChildren] : []).filter(item => item) || [];
+  let keyedOldMap = {};
+  let lastPlacedIndex = 0;
+  oldVChildren.forEach((oldVChild, index) => {
+    let oldKey = oldVChild.key ? oldVChild.key : index;
+    keyedOldMap[oldKey] = oldVChild;
+  });
+  let patch = [];
+  newVChildren.forEach((newVChild, index) => {
+    newVChild.mountIndex = index;
+    let newKey = newVChild.key ? newVChild.key : index;
+    let oldVChild = keyedOldMap[newKey];
+    if (oldVChild) {
+      updateElement(oldVChild, newVChild);
+      if (oldVChild.mountIndex < lastPlacedIndex) {
+        patch.push({
+          type: MOVE,
+          oldVChild,
+          newVChild,
+          mountIndex: index
+        });
+      }
+      delete keyedOldMap[newKey];
+      lastPlacedIndex = Math.max(lastPlacedIndex, oldVChild.mountIndex);
+    } else {
+      patch.push({
+        type: PLACEMENT,
+        newVChild,
+        mountIndex: index
+      });
+    }
+  });
+  let moveVChild = patch.filter(action => action.type === MOVE).map(action => action.oldVChild);
+  Object.values(keyedOldMap).concat(moveVChild).forEach((oldVChild) => {
+    let currentDOM = findDOM(oldVChild);
+    parentDOM.removeChild(currentDOM);
+  });
+  patch.forEach(action => {
+    let { type, oldVChild, newVChild, mountIndex } = action;
+    let childNodes = parentDOM.childNodes;
+    if (type === PLACEMENT) {
+      let newDOM = createDOM(newVChild);
+      let childNode = childNodes[mountIndex];
+      if (childNode) {
+        parentDOM.insertBefore(newDOM, childNode);
+      } else {
+        parentDOM.appendChild(newDOM);
+      }
+    } else if (type === MOVE) {
+      let oldDOM = findDOM(oldVChild);
+      let childNode = childNodes[mountIndex];
+      if (childNode) {
+        parentDOM.insertBefore(oldDOM, childNode);
+      } else {
+        parentDOM.appendChild(oldDOM);
+      }
+    }
+  });
 }
+
 
 const ReactDOM = {
   render

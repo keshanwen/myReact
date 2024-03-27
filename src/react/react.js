@@ -1,5 +1,5 @@
 import { wrapToVdom } from './utils'
-import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE } from './constants'
+import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_FRAGMENT } from './constants'
 import { Component } from './component'
 
 function createElement(type, config, children) {
@@ -48,7 +48,8 @@ const React = {
   createElement,
   Component,
   createRef,
-  forwardRef
+  forwardRef,
+  Fragment: REACT_FRAGMENT
 }
 
 export default React

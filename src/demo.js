@@ -364,40 +364,7 @@ function render(vdom, parentDOM) {
     if (newDOM._componentDidMount) newDOM._componentDidMount();
   }
 }
-export function createDOM(vdom) {
-  let { type, props, ref } = vdom;
-  let dom;
-  if (type && type.$$typeof === REACT_FORWARD_REF_TYPE) {
-    return mountForwardComponent(vdom);
-  } else if (type === REACT_TEXT) {
-    dom = document.createTextNode(props);
-  } else if (typeof type === "function") {
-    if (type.isReactComponent) {
-      return mountClassComponent(vdom);
-    } else {
-      return mountFunctionComponent(vdom);
-    }
-  } else {
-    dom = document.createElement(type);
-  }
-  if (props) {
-    updateProps(dom, {}, props);
-    if (typeof props.children == "object" && props.children.type) {
-      mount(props.children, dom);
-    } else if (Array.isArray(props.children)) {
-      reconcileChildren(props.children, dom);
-    }
-  }
-  vdom.dom = dom;
-  if (ref) ref.current = dom;
-  return dom;
-}
-function mountForwardComponent(vdom) {
-  let { type, props, ref } = vdom;
-  let renderVdom = type.render(props, ref);
-  vdom.oldRenderVdom = renderVdom;
-  return createDOM(renderVdom);
-}
+
 function mountClassComponent(vdom) {
   let { type, props, ref } = vdom;
   let classInstance = new type(props);
@@ -535,6 +502,301 @@ export function findDOM(vdom) {
     +}
 function reconcileChildren(childrenVdom, parentDOM) {
   for (let i = 0; i < childrenVdom.length; i++) {
+    mount(childrenVdom[i], parentDOM);
+  }
+}
+const ReactDOM = {
+  render,
+};
+export default ReactDOM;
+
+
+
+
+class Counter extends React.Component { // 他会比较两个状态相等就不会刷新视图 PureComponent是浅比较
+  static defaultProps = {
+    name: '珠峰架构'
+  };
+  constructor(props) {
+    super(props);
+    this.state = { number: 0 }
+    console.log('Counter 1.constructor')
+  }
+  componentWillMount() { // 取本地的数据 同步的方式：采用渲染之前获取数据，只渲染一次
+    console.log('Counter 2.componentWillMount');
+  }
+  componentDidMount() {
+    console.log('Counter 4.componentDidMount');
+  }
+  handleClick = () => {
+    this.setState({ number: this.state.number + 1 });
+  };
+  // react可以shouldComponentUpdate方法中优化 PureComponent 可以帮我们做这件事
+  shouldComponentUpdate(nextProps, nextState) { // 代表的是下一次的属性 和 下一次的状态
+    console.log('Counter 5.shouldComponentUpdate', nextState.number % 2 === 0);
+    return nextState.number % 2 === 0;
+    // return nextState.number!==this.state.number; //如果此函数种返回了false 就不会调用render方法了
+  } //不要随便用setState 可能会死循环
+  componentWillUpdate() {
+    console.log('Counter 6.componentWillUpdate');
+  }
+  componentDidUpdate() {
+    console.log('Counter 7.componentDidUpdate');
+  }
+  render() {
+    console.log('Counter 3.render');
+    return (
+      <div>
+        <p>{this.state.number}</p>
+        {/* <ChildCounter count={this.state.number} ></ChildCounter> */}
+        {this.state.number === 4 ? null : <ChildCounter count={this.state.number} />}
+        <button onClick={this.handleClick}>+</button>
+      </div>
+    )
+  }
+}
+class ChildCounter extends React.Component {
+  componentWillUnmount() {
+    console.log('   ChildCounter 6.componentWillUnmount')
+  }
+  componentWillMount() {
+    console.log('  ChildCounter 1.componentWillMount')
+  }
+  render() {
+    console.log('  ChildCounter 2.render')
+    return (<div>
+      {this.props.count}
+    </div>)
+  }
+  componentDidMount() {
+    console.log('  ChildCounter 3.componentDidMount')
+  }
+  componentWillReceiveProps(newProps) { // 第一次不会执行，之后属性更新时才会执行
+    console.log('  ChildCounter 4.componentWillReceiveProps')
+  }
+  shouldComponentUpdate(nextProps, nextState) {
+    console.log('  ChildCounter 5.shouldComponentUpdate', nextProps.count % 3 === 0)
+    return nextProps.count % 3 === 0; //子组件判断接收的属性 是否满足更新条件 为true则更新
+  }
+}
+ReactDOM.render(<Counter />, document.getElementById('root'));
+
+/*  class Counter extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      number: 0
+    }
+    console.log('Counter 1.constructor')
+  }
+
+  componentWillMount() { // 取本地的数据 同步的方式：采用渲染之前获取数据，只渲染一次
+    console.log('Counter 2.componentWillMount');
+  }
+
+  componentDidMount() {
+    console.log('Counter 4.componentDidMount');
+  }
+
+  handleClick = () => {
+    this.setState({
+      number: this.state.number + 1
+    })
+  }
+
+  // react可以shouldComponentUpdate方法中优化 PureComponent 可以帮我们做这件事
+  shouldComponentUpdate(nextProps, nextState) { // 代表的是下一次的属性 和 下一次的状态
+    console.log('Counter 5.shouldComponentUpdate', nextState.number % 2 === 0);
+    return nextState.number % 2 === 0;
+    // return nextState.number!==this.state.number; //如果此函数种返回了false 就不会调用render方法了
+  } //不要随便用setState 可能会死循环
+
+  componentWillUpdate() {
+    console.log('Counter 6.componentWillUpdate');
+  }
+  componentDidUpdate() {
+    console.log('Counter 7.componentDidUpdate');
+  }
+
+  render() {
+    console.log('Counter 3.render');
+    return (
+      <>
+        <div>{this.state.number}</div>
+        <button onClick={this.handleClick}>+</button>
+      </>
+    )
+  }
+}
+
+
+ReactDOM.render(<Counter></Counter>, document.getElementById('root')) */
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+import { wrapToVdom } from "./utils";
+import { Component } from './Component';
++import { REACT_FORWARD_REF_TYPE, REACT_FRAGMENT } from './constants';
+function createElement(type, config, children) {
+  let ref;
+  let key;
+  if (config) {
+    delete config.__source;
+    delete config.__self;
+    ref = config.ref;
+    delete config.ref;
+    key = config.key;
+    delete config.key;
+  }
+  let props = { ...config };
+  if (arguments.length > 3) {
+    props.children = Array.prototype.slice.call(arguments, 2).map(wrapToVdom);
+  } else {
+    props.children = wrapToVdom(children);
+  }
+  return {
+    type,
+    ref,
+    key,
+    props,
+  };
+}
+function createRef() {
+  return { current: null };
+}
+function forwardRef(render) {
+  var elementType = {
+    $$typeof: REACT_FORWARD_REF_TYPE,
+    render: render
+  };
+  return elementType;
+}
+const React = {
+  createElement,
+  Component,
+  createRef,
+  forwardRef,
+  Fragment: REACT_FRAGMENT
+};
+export default React;
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++import { REACT_TEXT, REACT_FORWARD_REF_TYPE, PLACEMENT, MOVE, REACT_FRAGMENT } from "./constants";
+import { addEvent } from "./event";
++import React from './react';
+function render(vdom, parentDOM) {
+  let newDOM = createDOM(vdom)
+  if (newDOM) {
+    parentDOM.appendChild(newDOM);
+    if (newDOM._componentDidMount) newDOM._componentDidMount();
+  }
+}
+export function createDOM(vdom) {
+  let { type, props, ref } = vdom;
+  let dom;
+  if (type && type.$$typeof === REACT_FORWARD_REF_TYPE) {
+    return mountForwardComponent(vdom);
+  } else if (type === REACT_TEXT) {
+    dom = document.createTextNode(props);
+    + } else if (oldVdom.type === REACT_FRAGMENT) {
+      +  dom = document.createDocumentFragment();
+      + } else if (typeof type === "function") {
+        if (type.isReactComponent) {
+          return mountClassComponent(vdom);
+        } else {
+          return mountFunctionComponent(vdom);
+        }
+      } else {
+    dom = document.createElement(type);
+  }
+  if (props) {
+    updateProps(dom, {}, props);
+    if (typeof props.children == "object" && props.children.type) {
+      +     props.children.mountIndex = 0;
+      mount(props.children, dom);
+    } else if (Array.isArray(props.children)) {
+      reconcileChildren(props.children, dom);
+    }
+  }
+  vdom.dom = dom;
+  if (ref) ref.current = dom;
+  return dom;
+}
+
+
+
+
+
+
+
+
+
+
+
+function updateChildren(parentDOM, oldVChildren, newVChildren) {
+  +  oldVChildren = (Array.isArray(oldVChildren) ? oldVChildren : oldVChildren ? [oldVChildren]).filter(item => item) : [];
+  +  newVChildren = (Array.isArray(newVChildren) ? newVChildren : newVChildren ? [newVChildren]).filter(item => item) : [];
+  +  let keyedOldMap = {};
+  +  let lastPlacedIndex = 0;
+  +  oldVChildren.forEach((oldVChild, index) => {
+    +    let oldKey = oldVChild.key ? oldVChild.key : index;
+    +    keyedOldMap[oldKey] = oldVChild;
+    +  });
+  +  let patch = [];
+  +  newVChildren.forEach((newVChild, index) => {
+    +    newVChild.mountIndex = index;
+    +    let newKey = newVChild.key ? newVChild.key : index;
+    +    let oldVChild = keyedOldMap[newKey];
+    +    if (oldVChild) {
+      +      updateElement(oldVChild, newVChild);
+      +      if (oldVChild.mountIndex < lastPlacedIndex) {
+        +        patch.push({
++ type: MOVE,
+          +          oldVChild,
+          +          newVChild,
+          +          mountIndex: index
+        +        });
+  +      }
++      delete keyedOldMap[newKey];
++      lastPlacedIndex = Math.max(lastPlacedIndex, oldVChild.mountIndex);
++    } else {
+  +      patch.push({
++ type: PLACEMENT,
+    +        newVChild,
+    +        mountIndex: index
+  +      });
++    }
++  });
++  let moveVChild = patch.filter(action => action.type === MOVE).map(action => action.oldVChild);
++  Object.values(keyedOldMap).concat(moveVChild).forEach((oldVChild) => {
+  +    let currentDOM = findDOM(oldVChild);
+  +    parentDOM.removeChild(currentDOM);
+  +  });
++  patch.forEach(action => {
+  +    let { type, oldVChild, newVChild, mountIndex } = action;
+  +    let childNodes = parentDOM.childNodes;
+  +    if (type === PLACEMENT) {
+    +      let newDOM = createDOM(newVChild);
+    +      let childNode = childNodes[mountIndex];
+    +      if (childNode) {
+      +        parentDOM.insertBefore(newDOM, childNode);
+      +      } else {
+      +        parentDOM.appendChild(newDOM);
+      +      }
+    +    } else if (type === MOVE) {
+      +      let oldDOM = findDOM(oldVChild);
+      +      let childNode = childNodes[mountIndex];
+      +      if (childNode) {
+        +        parentDOM.insertBefore(oldDOM, childNode);
+        +      } else {
+        +        parentDOM.appendChild(oldDOM);
+        +      }
+      +    }
+  +  });
+}
+function reconcileChildren(childrenVdom, parentDOM) {
+  for (let i = 0; i < childrenVdom.length; i++) {
+    +   childrenVdom[i].mountIndex = i;
     mount(childrenVdom[i], parentDOM);
   }
 }
