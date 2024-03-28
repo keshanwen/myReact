@@ -804,3 +804,238 @@ const ReactDOM = {
   render,
 };
 export default ReactDOM;
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~``
+
+
+class Counter extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      list: ['A', 'B', 'C', 'D', 'E', 'F']
+    }
+  }
+  handleClick = () => {
+    this.setState({
+      list: ['A', 'C', 'E', 'B', 'G']
+    });
+  };
+  render() {
+    return (
+      <React.Fragment>
+        <ul>
+          {
+            this.state.list.map(item => <li key={item}>{item}</li>)
+          }
+
+        </ul>
+        <button onClick={this.handleClick}>+</button>
+      </React.Fragment>
+    )
+  }
+}
+ReactDOM.render(<Counter />, document.getElementById('root'));
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+// static getDerivedStateFromProps(props, state) 这个生命周期的功能实际上就是将传入的props映射到state上面
+
+class Counter extends React.Component {
+  static defaultProps = {
+    name: '珠峰架构'
+  };
+  constructor(props) {
+    super(props);
+    this.state = { number: 0 }
+  }
+
+  handleClick = () => {
+    this.setState({ number: this.state.number + 1 });
+  };
+
+  render() {
+    console.log('3.render');
+    return (
+      <div>
+        <p>{this.state.number}</p>
+        <ChildCounter number={this.state.number} />
+        <button onClick={this.handleClick}>+</button>
+      </div>
+    )
+  }
+}
+class ChildCounter extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { number: 0 };
+  }
+  static getDerivedStateFromProps(nextProps, prevState) {
+    const { count } = nextProps;
+    // 当传入的type发生变化的时候，更新state
+    if (count % 2 === 0) {
+      return { number: number * 2 };
+    } else {
+      return { number: number * 3 };
+    }
+  }
+  render() {
+    console.log('child-render', this.state)
+    return (<div>
+      {this.state.number}
+    </div>)
+  }
+
+}
+
+ReactDOM.render(
+  <Counter />,
+  document.getElementById('root')
+);
+
+// getSnapshotBeforeUpdate() 被调用于render之后，可以读取但无法使用DOM的时候。它使您的组件可以在可能更改之前从DOM捕获一些信息（例如滚动位置）。此生命周期返回的任何值都将作为参数传递给componentDidUpdate()
+class ScrollingList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { messages: [] }
+    this.wrapper = React.createRef();
+  }
+
+  addMessage() {
+    this.setState(state => ({
+      messages: [`${state.messages.length}`, ...state.messages],
+    }))
+  }
+  componentDidMount() {
+    this.timeID = window.setInterval(() => {//设置定时器
+      this.addMessage();
+    }, 1000)
+  }
+  componentWillUnmount() {//清除定时器
+    window.clearInterval(this.timeID);
+  }
+  getSnapshotBeforeUpdate() {//很关键的，我们获取当前rootNode的scrollHeight，传到componentDidUpdate 的参数perScrollHeight
+    return { prevScrollTop: this.wrapper.current.scrollTop, prevScrollHeight: this.wrapper.current.scrollHeight };
+  }
+  componentDidUpdate(pervProps, pervState, { prevScrollHeight, prevScrollTop }) {
+    //当前向上卷去的高度加上增加的内容高度
+    this.wrapper.current.scrollTop = prevScrollTop + (this.wrapper.current.scrollHeight - prevScrollHeight);
+  }
+  render() {
+    let style = {
+      height: '100px',
+      width: '200px',
+      border: '1px solid red',
+      overflow: 'auto'
+    }
+    //<div key={index}>里不要加空格!
+    return (
+      <div style={style} ref={this.wrapper} >
+        {this.state.messages.map((message, index) => (
+          <div key={index}>{message}</div>
+        ))}
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(
+  <ScrollingList />,
+  document.getElementById('root')
+);
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+import { findDOM, compareTwoVdom } from './react-dom';
+export let updateQueue = {
+  isBatchingUpdate: false,
+  updaters: [],
+  batchUpdate() {//批量更新
+    updateQueue.isBatchingUpdate = false;
+    for (let updater of updateQueue.updaters) {
+      updater.updateComponent();
+    }
+    updateQueue.updaters.length = 0;
+  }
+}
+class Updater {
+  constructor(classInstance) {
+    this.classInstance = classInstance;
+    this.pendingStates = [];
+    this.callbacks = [];
+  }
+  addState(partialState, callback) {
+    this.pendingStates.push(partialState);///等待更新的或者说等待生效的状态
+    if (typeof callback === 'function')
+      this.callbacks.push(callback);//状态更新后的回调
+    this.emitUpdate();
+  }
+  emitUpdate(nextProps) {
+    this.nextProps = nextProps;
+    if (updateQueue.isBatchingUpdate) {
+      updateQueue.updaters.push(this);
+    } else {
+      this.updateComponent();
+    }
+  }
+  updateComponent() {
+    let { classInstance, pendingStates } = this;
+    if (this.nextProps || pendingStates.length > 0) {
+      shouldUpdate(classInstance, this.nextProps, this.getState());
+    }
+  }
+  getState() {
+    let { classInstance, pendingStates } = this;
+    let { state } = classInstance;
+    pendingStates.forEach((nextState) => {
+      if (typeof nextState === 'function') {
+        nextState = nextState(state);
+      }
+      state = { ...state, ...nextState };
+    });
+    pendingStates.length = 0;
+    return state;
+  }
+}
+function shouldUpdate(classInstance, nextProps, nextState) {
+  let willUpdate = true;
+  if (classInstance.shouldComponentUpdate
+    && !classInstance.shouldComponentUpdate(nextProps, nextState)) {
+    willUpdate = false;
+  }
+  if (willUpdate && classInstance.componentWillUpdate) {
+    classInstance.componentWillUpdate();
+  }
+  if (nextProps) {
+    classInstance.props = nextProps;
+  }
+  classInstance.state = nextState;
+  if (willUpdate) classInstance.forceUpdate();
+}
+export class Component {
+  static isReactComponent = true;
+  constructor(props) {
+    this.props = props;
+    this.state = {};
+    this.updater = new Updater(this);
+  }
+  setState(partialState, callback) {
+    this.updater.addState(partialState, callback);
+  }
+  forceUpdate() {
+    let oldRenderVdom = this.oldRenderVdom;
+    let oldDOM = findDOM(oldRenderVdom);
+    +        if (this.constructor.getDerivedStateFromProps) {
+      +            let newState = this.constructor.getDerivedStateFromProps(this.props, this.state);
+      +            if (newState)
+        +                this.state =  { ...this.state, ...newState };
+      +        }
+    +       let snapshot = this.getSnapshotBeforeUpdate && this.getSnapshotBeforeUpdate();
+    let newRenderVdom = this.render();
+    compareTwoVdom(oldDOM.parentNode, oldRenderVdom, newRenderVdom);
+    this.oldRenderVdom = newRenderVdom;
+    if (this.componentDidUpdate) {
+      +            this.componentDidUpdate(this.props, this.state, snapshot);
+    }
+  }
+}

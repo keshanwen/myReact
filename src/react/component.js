@@ -86,11 +86,21 @@ export class Component {
   forceUpdate() {
     let oldRenderVdom = this.oldRenderVdom
     let oldDOM = findDOM(oldRenderVdom)
+    if (this.constructor.getDerivedStateFromProps) {
+      let newState = this.constructor.getDerivedStateFromProps(this.props, this.state)
+      if (newState) {
+        this.state = {
+          ...this.state,
+          ...newState
+        }
+      }
+    }
+    let snapshot = this.getSnapshotBeforeUpdate && this.getSnapshotBeforeUpdate()
     let newRenderVdom = this.render()
     compareTwoVdom(oldDOM.parentNode, oldRenderVdom, newRenderVdom)
     this.oldRenderVdom = newRenderVdom
     if (this.componentDidUpdate) {
-      this.componentDidUpdate(this.props, this.state);
+      this.componentDidUpdate(this.props, this.state, snapshot);
     }
   }
 }
