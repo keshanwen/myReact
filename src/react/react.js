@@ -1,5 +1,5 @@
 import { wrapToVdom } from './utils'
-import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_FRAGMENT } from './constants'
+import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_FRAGMENT, REACT_CONTEXT, REACT_PROVIDER } from './constants'
 import { Component } from './component'
 
 function createElement(type, config, children) {
@@ -44,12 +44,28 @@ function forwardRef(render) {
   return elementType
 }
 
+
+function createContext() {
+  let context = { _currentValue: undefined };
+  context.Provider = {
+    $$typeof: REACT_PROVIDER,
+    _context: context
+  }
+  context.Consumer = {
+    $$typeof: REACT_CONTEXT,
+    _context: context
+  }
+
+  return context
+}
+
 const React = {
   createElement,
   Component,
   createRef,
   forwardRef,
-  Fragment: REACT_FRAGMENT
+  Fragment: REACT_FRAGMENT,
+  createContext
 }
 
 export default React
