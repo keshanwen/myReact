@@ -1,38 +1,61 @@
-/*  import React from './react/react';
-import ReactDOM from './react/react-dom'; */
+import React from './react/react';
+import ReactDOM from './react/react-dom';
 
-import React from 'react';
-import ReactDOM from 'react-dom';
 
-const loading = message => OldComponent => {
-  return class extends React.Component {
+/* import React from 'react';
+import ReactDOM from 'react-dom'; */
+
+class Button extends React.Component {
+  state = { name: '张三' }
+
+  componentWillMount() {
+    console.log('Button componentWillMount');
+  }
+
+  componentDidMount() {
+    console.log('Button componentDidMount');
+  }
+
+  render() {
+    console.log('Button render');
+    return <button name={this.state.name}>{this.props.title}</button>
+  }
+}
+
+const wrapper = OldComponent => {
+  return class NewComponent extends OldComponent {
+    state = { number: 0 }
+    componentWillMount() {
+      console.log('WrapperButton componentWillMount');
+      super.componentWillMount()
+    }
+    componentDidMount() {
+      console.log('WrapperButton componentDidMount');
+      super.componentDidMount()
+    }
+    handleClick = () => {
+      this.setState({
+        number: this.state.number + 1
+      })
+    }
     render() {
-      const state = {
-        show: () => {
-          console.log('show', message)
-        },
-        hide: () => {
-          console.log('hide', message)
-        }
+      console.log('WrapperButton render');
+      let renderElement = super.render()
+      let newProps = {
+        ...renderElement.props,
+        ...this.state,
+        onClick: this.handleClick
       }
-
-      return (
-        <OldComponent {...this.props} {...state} {...{...this.props, ...state }}></OldComponent>
+      return React.cloneElement(
+        renderElement,
+        newProps,
+        this.state.number
       )
     }
   }
 }
 
-@loading('消息')
-class Hello extends React.Component {
-  render() {
-    return <div>hello <button onClick={this.props.show}>show</button><button onClick={this.props.hide}>hide</button></div>
-  }
-}
-
-let LoadingHello = loading('消息')(Hello)
+let WrappedButton = wrapper(Button)
 
 
-ReactDOM.render(
-  <LoadingHello></LoadingHello>, document.getElementById('root')
-)
+ReactDOM.render(<WrappedButton title='标题'></WrappedButton>, document.getElementById('root'))
