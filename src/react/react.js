@@ -1,5 +1,5 @@
-import { wrapToVdom } from './utils'
-import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_FRAGMENT, REACT_CONTEXT, REACT_PROVIDER } from './constants'
+import { wrapToVdom, shallowEqual } from './utils'
+import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_FRAGMENT, REACT_CONTEXT, REACT_PROVIDER, REACT_MEMO } from './constants'
 import { Component } from './component'
 
 function createElement(type, config, children) {
@@ -75,6 +75,20 @@ function cloneElement(element, newProps, ...newChildren) {
   }
 }
 
+class PureComponent extends Component {
+  shouldComponentUpdate(newProps, nextState) {
+    return !shallowEqual(this.props, newProps) || !shallowEqual(this.state, nextState)
+  }
+}
+
+function memo(type, compare = shallowEqual) {
+  return {
+    $$typeof: REACT_MEMO,
+    type,
+    compare
+  }
+}
+
 const React = {
   createElement,
   Component,
@@ -82,7 +96,9 @@ const React = {
   forwardRef,
   Fragment: REACT_FRAGMENT,
   createContext,
-  cloneElement
+  cloneElement,
+  PureComponent,
+  memo
 }
 
 export default React

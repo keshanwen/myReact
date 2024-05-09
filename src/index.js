@@ -1,35 +1,45 @@
 import React from './react/react';
 import ReactDOM from './react/react-dom';
 
-
-/* import React from 'react';
+/*
+import React from 'react';
 import ReactDOM from 'react-dom'; */
 
-class MouseTracker extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { x: 0, y: 0 };
+class ClassCounter extends React.PureComponent {
+  render() {
+    console.log('ClassCounter render')
+    return <div>ClassCounter: { this.props.count }</div>
   }
+}
 
-  handleMouseMove = (event) => {
+function FunctionCounter(props) {
+  console.log('FunctionCounter render')
+  return <div>FunctionCounter: { props.count }</div>
+}
+
+const MemoFunctionCounter = React.memo(FunctionCounter)
+
+class App extends React.Component {
+  state = { number: 0 }
+  amountRef = React.createRef()
+  handleClick = () => {
+    let nextNumber = this.state.number + parseInt(this.amountRef.current.value)
     this.setState({
-      x: event.clientX,
-      y: event.clientY
-    });
+      number: nextNumber
+    })
   }
 
   render() {
     return (
-      <div onMouseMove={this.handleMouseMove}>
-        {this.props.render(this.state)}
+      <div>
+        <ClassCounter count={this.state.number}></ClassCounter>
+        <MemoFunctionCounter count={this.state.number}></MemoFunctionCounter>
+        <input ref={this.amountRef}></input>
+        <button onClick={this.handleClick}>+</button>
       </div>
-    );
+    )
   }
 }
 
-ReactDOM.render(< MouseTracker render={params => (
-  <>
-    <h1>移动鼠标!</h1>
-    <p>当前的鼠标位置是 ({params.x}, {params.y})</p>
-  </>
-)} />, document.getElementById('root'));
+ReactDOM.render(
+  <App />, document.getElementById('root'));
