@@ -1,4 +1,4 @@
-+import { REACT_TEXT, REACT_FORWARD_REF_TYPE, PLACEMENT, MOVE, REACT_FRAGMENT, REACT_PROVIDER, REACT_CONTEXT, REACT_MEMO } from "./constants";
+import { REACT_TEXT, REACT_FORWARD_REF_TYPE, PLACEMENT, MOVE, REACT_FRAGMENT, REACT_PROVIDER, REACT_CONTEXT, REACT_MEMO } from "./constants";
 import { addEvent } from "./event";
 import React from './react';
 function render(vdom, parentDOM) {
@@ -11,25 +11,25 @@ function render(vdom, parentDOM) {
 export function createDOM(vdom) {
   let { type, props, ref } = vdom;
   let dom;
-  +  if (type && type.$$typeof === REACT_MEMO) {
-    +    return mountMemoComponent(vdom);
-    +  } else if (type && type.$$typeof === REACT_PROVIDER) {
-      return mountProviderComponent(vdom)
-    } else if (type && type.$$typeof === REACT_CONTEXT) {
-      return mountContextComponent(vdom)
-    } else if (type && type.$$typeof === REACT_FORWARD_REF_TYPE) {
-      return mountForwardComponent(vdom);
-    } else if (type === REACT_TEXT) {
-      dom = document.createTextNode(props);
-    } else if (type === REACT_FRAGMENT) {
-      dom = document.createDocumentFragment();
-    } else if (typeof type === "function") {
-      if (type.isReactComponent) {
-        return mountClassComponent(vdom);
-      } else {
-        return mountFunctionComponent(vdom);
-      }
+  if (type && type.$$typeof === REACT_MEMO) {
+    return mountMemoComponent(vdom);
+  } else if (type && type.$$typeof === REACT_PROVIDER) {
+    return mountProviderComponent(vdom)
+  } else if (type && type.$$typeof === REACT_CONTEXT) {
+    return mountContextComponent(vdom)
+  } else if (type && type.$$typeof === REACT_FORWARD_REF_TYPE) {
+    return mountForwardComponent(vdom);
+  } else if (type === REACT_TEXT) {
+    dom = document.createTextNode(props);
+  } else if (type === REACT_FRAGMENT) {
+    dom = document.createDocumentFragment();
+  } else if (typeof type === "function") {
+    if (type.isReactComponent) {
+      return mountClassComponent(vdom);
     } else {
+      return mountFunctionComponent(vdom);
+    }
+  } else {
     dom = document.createElement(type);
   }
   if (props) {
@@ -46,18 +46,20 @@ export function createDOM(vdom) {
   return dom;
 }
 
-+function mountMemoComponent(vdom) {
-  +  let { type, props } = vdom;
-  +  let renderVdom = type.type(props);
-  +  vdom.oldRenderVdom = renderVdom;
-  +  return createDOM(renderVdom);
-  +}
+function mountMemoComponent(vdom) {
+  let { type, props } = vdom;
+  let renderVdom = type.type(props);
+  vdom.oldRenderVdom = renderVdom;
+  + if (!renderVdom) return null;
+  return createDOM(renderVdom);
+}
 function mountProviderComponent(vdom) {
   let { type, props } = vdom;
   let context = type._context;
   context._currentValue = props.value;
   let renderVdom = props.children;
   vdom.oldRenderVdom = renderVdom;
+  + if (!renderVdom) return null;
   return createDOM(renderVdom);
 }
 function mountContextComponent(vdom) {
@@ -65,12 +67,14 @@ function mountContextComponent(vdom) {
   let context = type._context;
   let renderVdom = props.children(context._currentValue);
   vdom.oldRenderVdom = renderVdom;
+  + if (!renderVdom) return null;
   return createDOM(renderVdom);
 }
 function mountForwardComponent(vdom) {
   let { type, props, ref } = vdom;
   let renderVdom = type.render(props, ref);
   vdom.oldRenderVdom = renderVdom;
+  + if (!renderVdom) return null;
   return createDOM(renderVdom);
 }
 function mountClassComponent(vdom) {
@@ -84,6 +88,7 @@ function mountClassComponent(vdom) {
   if (classInstance.componentWillMount) classInstance.componentWillMount();
   let renderVdom = classInstance.render();
   classInstance.oldRenderVdom = renderVdom;
+  + if (!renderVdom) return null;
   let dom = createDOM(renderVdom);
   if (classInstance.componentDidMount)
     dom.componentDidMount = classInstance.componentDidMount.bind(classInstance);
@@ -93,6 +98,7 @@ function mountFunctionComponent(vdom) {
   let { type, props } = vdom;
   let renderVdom = type(props);
   vdom.oldRenderVdom = renderVdom;
+  + if (!renderVdom) return null;
   return createDOM(renderVdom);
 }
 function updateProps(dom, oldProps = {}, newProps = {}) {
@@ -168,8 +174,8 @@ export function compareTwoVdom(parentDOM, oldVdom, newVdom, nextDOM) {
   }
 }
 function updateElement(oldVdom, newVdom) {
-  +  if (oldVdom.type && oldVdom.type.$$typeof === REACT_MEMO) {
-    +    updateMemoComponent(oldVdom, newVdom);
+  if (oldVdom.type && oldVdom.type.$$typeof === REACT_MEMO) {
+    updateMemoComponent(oldVdom, newVdom);
   } else if (oldVdom.type.$$typeof === REACT_CONTEXT) {
     updateContextComponent(oldVdom, newVdom);
   } else if (oldVdom.type.$$typeof === REACT_PROVIDER) {
@@ -180,12 +186,12 @@ function updateElement(oldVdom, newVdom) {
       currentDOM.textContent = newVdom.props;
     }
     return;
-  } else if (oldVdom.type === REACT_FRAGMENT) {
-    let currentDOM = newVdom.dom = findDOM(oldVdom);
-    updateChildren(currentDOM, oldVdom.props.children, newVdom.props.children);
   } else if (typeof oldVdom.type === 'string') {
     let currentDOM = newVdom.dom = findDOM(oldVdom);
     updateProps(currentDOM, oldVdom.props, newVdom.props);
+    updateChildren(currentDOM, oldVdom.props.children, newVdom.props.children);
+  } else if (oldVdom.type === REACT_FRAGMENT) {
+    let currentDOM = newVdom.dom = findDOM(oldVdom);
     updateChildren(currentDOM, oldVdom.props.children, newVdom.props.children);
   } else if (typeof oldVdom.type === 'function') {
     if (oldVdom.type.isReactComponent) {
@@ -195,19 +201,19 @@ function updateElement(oldVdom, newVdom) {
     }
   }
 }
-+function updateMemoComponent(oldVdom, newVdom) {
-  + let { type } = oldVdom;
-  + if (!type.compare(oldVdom.props, newVdom.props)) {
-    +   const oldDOM = findDOM(oldVdom);
-    +   const parentDOM = oldDOM.parentNode;
-    +   const { type } = newVdom;
-    +   let renderVdom = type.type(newVdom.props);
-    +   compareTwoVdom(parentDOM, oldVdom.oldRenderVdom, renderVdom);
-    +   newVdom.oldRenderVdom = renderVdom;
-    + } else {
-    +   newVdom.oldRenderVdom = oldVdom.oldRenderVdom;
-    + }
-  +}
+function updateMemoComponent(oldVdom, newVdom) {
+  let { type } = oldVdom;
+  if (!type.compare(oldVdom.props, newVdom.props)) {
+    const oldDOM = findDOM(oldVdom);
+    const parentDOM = oldDOM.parentNode;
+    const { type } = newVdom;
+    let renderVdom = type.type(newVdom.props);
+    compareTwoVdom(parentDOM, oldVdom.oldRenderVdom, renderVdom);
+    newVdom.oldRenderVdom = renderVdom;
+  } else {
+    newVdom.oldRenderVdom = oldVdom.oldRenderVdom;
+  }
+}
 function updateProviderComponent(oldVdom, newVdom) {
   let parentDOM = findDOM(oldVdom).parentNode;
   let { type, props } = newVdom;
@@ -310,5 +316,6 @@ function reconcileChildren(childrenVdom, parentDOM) {
 }
 const ReactDOM = {
   render,
+  createPortal: render
 };
 export default ReactDOM;

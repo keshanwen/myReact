@@ -57,6 +57,7 @@ function mountMemoComponent(vdom) {
   let { type, props } = vdom;
   let renderVdom = type.type(props);
   vdom.oldRenderVdom = renderVdom;
+  if (!renderVdom) return null
   return createDOM(renderVdom);
 }
 
@@ -66,6 +67,7 @@ function mountProviderComponent(vdom) {
   context._currentValue = props.value
   let renderVdom = props.children
   vdom.oldRenderVdom = renderVdom
+  if (!renderVdom) return null;
   return createDOM(renderVdom)
 }
 
@@ -74,6 +76,7 @@ function mountContextComponent(vdom) {
   let context = type._context
   let renderVdom = props.children(context._currentValue)
   vdom.oldRenderVdom = renderVdom
+  if (!renderVdom) return null;
   return createDOM(renderVdom)
 }
 
@@ -111,6 +114,7 @@ function mountForwardComponent(vdom) {
   let { type, props, ref } = vdom
   let renderVdom = type.render(props, ref)
   vdom.oldRenderVdom = renderVdom
+  if (!renderVdom) return null;
   return createDOM(renderVdom)
 }
 
@@ -118,6 +122,7 @@ function mountFunctionComponent(vdom) {
   let { type: functionComponent, props } = vdom
   let renderVdom = functionComponent(props)
   vdom.oldRenderVdom = renderVdom // 将 vdom 属性记录下来
+  if (!renderVdom) return null;
   return createDOM(renderVdom)
 }
 
@@ -132,6 +137,7 @@ function mountClassComponent(vdom) {
   if (classInstance.componentWillMount) classInstance.componentWillMount()
   let renderVdom = classInstance.render()
   classInstance.oldRenderVdom = renderVdom
+  if (!renderVdom) return null;
   let dom = createDOM(renderVdom)
   if (classInstance.componentDidMount) dom.componentDidMount = classInstance.componentDidMount.bind(classInstance)
   return dom
@@ -334,7 +340,8 @@ function updateChildren(parentDOM, oldVChildren, newVChildren) {
 
 
 const ReactDOM = {
-  render
+  render,
+  createPortal: render
 }
 
 export default ReactDOM

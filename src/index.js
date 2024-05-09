@@ -1,45 +1,25 @@
 import React from './react/react';
 import ReactDOM from './react/react-dom';
 
-/*
-import React from 'react';
+
+/* import React from 'react';
 import ReactDOM from 'react-dom'; */
 
-class ClassCounter extends React.PureComponent {
+class Dialog extends React.Component {
   render() {
-    console.log('ClassCounter render')
-    return <div>ClassCounter: { this.props.count }</div>
+    return ReactDOM.createPortal(
+      <div className="dialog">{this.props.message}</div>,
+      document.getElementById('dialog')
+    )
   }
 }
-
-function FunctionCounter(props) {
-  console.log('FunctionCounter render')
-  return <div>FunctionCounter: { props.count }</div>
-}
-
-const MemoFunctionCounter = React.memo(FunctionCounter)
-
 class App extends React.Component {
-  state = { number: 0 }
-  amountRef = React.createRef()
-  handleClick = () => {
-    let nextNumber = this.state.number + parseInt(this.amountRef.current.value)
-    this.setState({
-      number: nextNumber
-    })
-  }
-
   render() {
     return (
       <div>
-        <ClassCounter count={this.state.number}></ClassCounter>
-        <MemoFunctionCounter count={this.state.number}></MemoFunctionCounter>
-        <input ref={this.amountRef}></input>
-        <button onClick={this.handleClick}>+</button>
+        <Dialog message="模态窗口" />
       </div>
     )
   }
 }
-
-ReactDOM.render(
-  <App />, document.getElementById('root'));
+ReactDOM.render(<App />, document.getElementById('root'));
