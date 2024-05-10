@@ -1,30 +1,34 @@
- import React from './react/react';
+import React from './react/react';
 import ReactDOM from './react/react-dom';
 
 
 /* import React from 'react';
 import ReactDOM from 'react-dom'; */
 
-
-
-function Child({ data, handleClick }) {
-  console.log('Child render');
-  return (
-    <button onClick={handleClick}>{data.number}</button>
-  )
+/**
+ * 处理
+ * @param {*} state 老状态 默认值是{number:0}
+ * @param {*} action  动作对象，动作对象必须有一个type属性表示你想干啥
+ * @returns
+ */
+function reducer(state = { number: 0 }, action) {
+  switch (action.type) {
+    case 'ADD':
+      return { number: state.number + 1 };
+    case 'MINUS':
+      return { number: state.number - 1 }
+    default:
+      return state;
+  }
 }
-let MemoChild = React.memo(Child);
-function App() {
-  console.log('App render');
-  const [name, setName] = React.useState('zhufeng');
-  const [number, setNumber] = React.useState(0);
-  let data = React.useMemo(() => ({ number }), [number]);
-  let handleClick = React.useCallback(() => setNumber(number + 1), [number]);
+function Counter() {
+  const [state, dispatch] = React.useReducer(reducer, { number: 0 });
   return (
     <div>
-      <input type="text" value={name} onChange={(event) => setName(event.target.value)} />
-      <MemoChild data={data} handleClick={handleClick} />
+      <p>{state.number}</p>
+      <button onClick={() => dispatch({ type: 'ADD' })}>+</button>
+      <button onClick={() => dispatch({ type: 'MINUS' })}>-</button>
     </div>
   )
 }
-ReactDOM.render(<App />, document.getElementById('root'));
+ReactDOM.render(<Counter />, document.getElementById('root'));
