@@ -1,4 +1,4 @@
-import React from './react/react';
+ import React from './react/react';
 import ReactDOM from './react/react-dom';
 
 
@@ -7,27 +7,24 @@ import ReactDOM from 'react-dom'; */
 
 
 
+function Child({ data, handleClick }) {
+  console.log('Child render');
+  return (
+    <button onClick={handleClick}>{data.number}</button>
+  )
+}
+let MemoChild = React.memo(Child);
 function App() {
-  const [number1, setNumber1] = React.useState(0)
-  const [number2, setNumber2] = React.useState(0)
-
-  let handleClick1 = () => setNumber1(state => state + 1)
-  let handleClick2 = () => setNumber2(state => state + 1)
-
+  console.log('App render');
+  const [name, setName] = React.useState('zhufeng');
+  const [number, setNumber] = React.useState(0);
+  let data = React.useMemo(() => ({ number }), [number]);
+  let handleClick = React.useCallback(() => setNumber(number + 1), [number]);
   return (
     <div>
-      <p>{number1}</p>
-      <button onClick={handleClick1}>+</button>
-      <p>{number2}</p>
-      <button onClick={handleClick2}>+</button>
+      <input type="text" value={name} onChange={(event) => setName(event.target.value)} />
+      <MemoChild data={data} handleClick={handleClick} />
     </div>
   )
 }
-
-
-
-ReactDOM.render(
-  <App />,
-  document.getElementById('root')
-);
-
+ReactDOM.render(<App />, document.getElementById('root'));

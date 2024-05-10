@@ -28,6 +28,44 @@ export function useState(initialState) {
   return [hookStates[hookIndex++], setState]
 }
 
+export function useMemo(factory, deps) {
+  if (hookStates[hookIndex]) { // 判断一下是否是首次渲染
+    // 如果是更新的时候， 也就是说不是首次渲染
+    let [lastMemo, lastDeps] = hookStates[hookIndex]
+    // 如果老的依赖数组和新的依赖数组且完全一样 true 否则 false
+    let allTheSame = deps.every((item, index) => item === lastDeps[index])
+    if (allTheSame) {
+      hookIndex++
+      return lastMemo
+    } else {
+      let newMemo = factory()
+      hookStates[hookIndex++] = [newMemo, deps]
+      return newMemo
+    }
+  } else { // 说明是首次渲染
+    let newMemo = factory()
+    hookStates[hookIndex++] = [newMemo, deps]
+    return newMemo
+  }
+}
+export function useCallback(callback, deps) {
+  if (hookStates[hookIndex]) {//判断一下是否是首次渲染
+    //如果是更新的时候 ，也就是说不是初次渲染
+    let [lastCallback, lastDeps] = hookStates[hookIndex];
+    //如果老的依赖数组和新的依赖数且完全一样，true 否则 返回false
+    let allTheSame = deps.every((item, index) => item === lastDeps[index]);
+    if (allTheSame) {
+      hookIndex++;
+      return lastCallback;
+    } else {
+      hookStates[hookIndex++] = [callback, deps];
+      return callback;
+    }
+  } else {//说明是首次渲染
+    hookStates[hookIndex++] = [callback, deps];
+    return callback;
+  }
+}
 
 export function mount(vdom, container) {
   let newDom = createDOM(vdom)
