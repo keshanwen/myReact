@@ -2,8 +2,30 @@ import { REACT_TEXT, REACT_FORWARD_REF_TYPE, PLACEMENT, MOVE, REACT_FRAGMENT, RE
 import { addEvent } from './event'
 import React from "./react";
 
+let hookStates = [] // 这是一个数组，用来记录状态
+let hookIndex = 0 // 索引当前 hook 的索引
+let scheduleUpdate // 调度更新的方法
+
 function render(vdom, container) {
   mount(vdom, container)
+  scheduleUpdate = () => {
+    hookIndex = 0 // ??????????????????????????
+    // 每次更新都要从根节点开始进行 DOM DIFF
+    compareTwoVdom(container,vdom, vdom)
+  }
+}
+
+export function useState(initialState) {
+  hookStates[hookIndex] = hookStates[hookIndex] || initialState
+  let currentIndex = hookIndex
+  function setState(newState) {
+    if (typeof newState === 'function') {
+      newState = newState(hookStates[currentIndex])
+    }
+    hookStates[currentIndex] = newState
+    scheduleUpdate()
+  }
+  return [hookStates[hookIndex++], setState]
 }
 
 

@@ -5,21 +5,29 @@ import ReactDOM from './react/react-dom';
 /* import React from 'react';
 import ReactDOM from 'react-dom'; */
 
-class Dialog extends React.Component {
-  render() {
-    return ReactDOM.createPortal(
-      <div className="dialog">{this.props.message}</div>,
-      document.getElementById('dialog')
-    )
-  }
+
+
+function App() {
+  const [number1, setNumber1] = React.useState(0)
+  const [number2, setNumber2] = React.useState(0)
+
+  let handleClick1 = () => setNumber1(state => state + 1)
+  let handleClick2 = () => setNumber2(state => state + 1)
+
+  return (
+    <div>
+      <p>{number1}</p>
+      <button onClick={handleClick1}>+</button>
+      <p>{number2}</p>
+      <button onClick={handleClick2}>+</button>
+    </div>
+  )
 }
-class App extends React.Component {
-  render() {
-    return (
-      <div>
-        <Dialog message="模态窗口" />
-      </div>
-    )
-  }
-}
-ReactDOM.render(<App />, document.getElementById('root'));
+
+
+
+ReactDOM.render(
+  <App />,
+  document.getElementById('root')
+);
+

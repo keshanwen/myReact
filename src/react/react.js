@@ -1,6 +1,7 @@
 import { wrapToVdom, shallowEqual } from './utils'
 import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_FRAGMENT, REACT_CONTEXT, REACT_PROVIDER, REACT_MEMO } from './constants'
 import { Component } from './component'
+import { useState } from './react-dom'
 
 function createElement(type, config, children) {
   let ref;
@@ -98,7 +99,8 @@ const React = {
   createContext,
   cloneElement,
   PureComponent,
-  memo
+  memo,
+  useState
 }
 
 export default React
