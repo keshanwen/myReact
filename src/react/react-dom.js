@@ -141,6 +141,10 @@ export function useRef(initialState) {
   return hookStates[hookIndex++]
 }
 
+export function useImperativeHandle(ref, handler) {
+  ref.current = handler()
+}
+
 export function mount(vdom, container) {
   let newDom = createDOM(vdom)
   if (newDom) {
@@ -267,7 +271,10 @@ function mountClassComponent(vdom) {
     classInstance.context = type.contextType._currentValue
   }
   vdom.classInstance = classInstance
-  if (ref) ref.current = classInstance
+  if (ref) {
+    ref.current = classInstance
+    classInstance.ref = ref
+  }
   if (classInstance.componentWillMount) classInstance.componentWillMount()
   let renderVdom = classInstance.render()
   classInstance.oldRenderVdom = renderVdom

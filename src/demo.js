@@ -1,50 +1,33 @@
-+export function useLayoutEffect(callback, dependencies) {
-  +    let currentIndex = hookIndex;
-  +    if (hookStates[hookIndex]) {
-    +        let[destroy, lastDeps] = hookStates[hookIndex];
-    +        let same = dependencies && dependencies.every((item, index) => item === lastDeps[index]);
-    +        if (same) {
-      +          hookIndex++;
-      +        } else {
-      +          destroy && destroy();
-      +          queueMicrotask(() => {
-        +              hookStates[currentIndex]=[callback(), dependencies];
-        +          });
-      +          hookIndex++
-        +        }
-    +    } else {
-    +      queueMicrotask(() => {
-      +          hookStates[currentIndex]=[callback(), dependencies];
-      +      });
-    +       hookIndex++;
-    +    }
-  +}
-+export function useRef(initialState) {
-  +    hookStates[hookIndex] =  hookStates[hookIndex] || { current: initialState };
-  +    return hookStates[hookIndex++];
-  +}
-
-
-
-import React from 'react';
-import ReactDOM from 'react-dom';
-function Counter() {
-  let valueRef = React.useRef();
-  const [state, setState] = React.useState(0)
-  const handleClick = () => {
-    let newValue = state + 1;
-    valueRef.current = newValue;
-    setState(newValue)
-    otherFun();
+function mountClassComponent(vdom) {
+  +    const { type, props, ref } = vdom;
+  const classInstance = new type(props);
+  +   if (ref) {
+    +       ref.current = classInstance;
+    +       classInstance.ref = ref;
+    +   }
+  vdom.classInstance = classInstance;
+  if (type.contextType) {
+    classInstance.context = type.contextType.Provider._value;
   }
-  function otherFun() {
-    console.log('state', valueRef.current);
-  }
-  return (
-    <div>
-      <p>state:{state}</p>
-      <button onClick={handleClick}>+</button>
-    </div>
-  )
+  if (classInstance.componentWillMount)
+    classInstance.componentWillMount();
+  classInstance.state = getDerivedStateFromProps(classInstance, classInstance.props, classInstance.state)
+  const renderVdom = classInstance.render();
+  classInstance.oldRenderVdom = vdom.oldRenderVdom = renderVdom;
+  const dom = createDOM(renderVdom);
+  if (classInstance.componentDidMount)
+    dom.componentDidMount = classInstance.componentDidMount.bind(classInstance);
+  return dom;
 }
-ReactDOM.render(<Counter />, document.getElementById('root'));
+
++export function useImperativeHandle(ref, handler) {
+  +    ref.current = handler();
+  +}
+const ReactDOM = {
+  render
+};
+export default ReactDOM;
+
+
+// forwardRef将ref从父组件中转发到子组件中的dom元素上, 子组件接受props和ref作为参数
+// useImperativeHandle 可以让你在使用 ref 时自定义暴露给父组件的实例值

@@ -1,7 +1,7 @@
 import { wrapToVdom, shallowEqual } from './utils'
 import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_FRAGMENT, REACT_CONTEXT, REACT_PROVIDER, REACT_MEMO } from './constants'
 import { Component } from './component'
-import { useState, useMemo, useCallback, useReducer, useContext, useEffect, useRef, useLayoutEffect } from './react-dom'
+import { useState, useMemo, useCallback, useReducer, useContext, useEffect, useRef, useLayoutEffect, useImperativeHandle } from './react-dom'
 
 function createElement(type, config, children) {
   let ref;
@@ -107,7 +107,8 @@ const React = {
   useContext,
   useEffect,
   useRef,
-  useLayoutEffect
+  useLayoutEffect,
+  useImperativeHandle
 }
 
 export default React

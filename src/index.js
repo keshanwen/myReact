@@ -5,26 +5,35 @@ import ReactDOM from './react/react-dom';
 // import React from 'react';
 // import ReactDOM from 'react-dom';
 
-function Counter() {
-  let valueRef = React.useRef()
-  const [state, setState] = React.useState(0)
-  const handleClick = () => {
-    let newValue = state + 1
-    valueRef.current = newValue
-    setState(newValue)
-    othreFn()
-  }
+function Child(props, forwardRef) {
+  let inputRef = React.useRef()
 
-  function othreFn() {
-    console.log('state', valueRef.current)
+  // 命令式的 ref, 我们可以自定义向外使用的对象
+  React.useImperativeHandle(forwardRef, () => ({
+    focus() {
+      inputRef.current.focus()
+    }
+  }))
+
+  return <input ref={inputRef}></input>
+}
+let ForwardChild = React.forwardRef(Child)
+
+function Parent() {
+  let inputRef = React.useRef()
+
+  let getFocus = () => {
+    inputRef.current.focus()
   }
 
   return (
     <div>
-      <p>state: {state}</p>
-      <button onClick={handleClick}>+</button>
+      <ForwardChild ref={inputRef}></ForwardChild>
+      <button onClick={getFocus}>获得焦点</button>
     </div>
   )
 }
 
-ReactDOM.render(<Counter />, document.getElementById('root'));
+ReactDOM.render(<Parent />, document.getElementById('root'));
+
+
