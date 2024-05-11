@@ -86,6 +86,11 @@ export function useCallback(callback, deps) {
   }
 }
 
+
+export function useContext(context) {
+  return context._currentValue
+}
+
 export function mount(vdom, container) {
   let newDom = createDOM(vdom)
   if (newDom) {

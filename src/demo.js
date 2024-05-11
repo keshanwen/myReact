@@ -1,58 +1,9 @@
-let hookStates = [];
-let hookIndex = 0;
-let scheduleUpdate;
-function render(vdom, container) {
-  mount(vdom, container);
-  scheduleUpdate = () => {
-    hookIndex = 0;
-    compareTwoVdom(container, vdom, vdom);
-  }
-}
-export function useState(initialState) {
-  hookStates[hookIndex] = hookStates[hookIndex] || initialState;
-  let currentIndex = hookIndex;
-  function setState(newState) {
-    if (typeof newState === 'function') newState = newState(hookStates[currentIndex]);
-    hookStates[currentIndex] = newState;
-    scheduleUpdate();
-  }
-  return [hookStates[hookIndex++], setState];
-}
-+export function useMemo(factory, deps) {
-  +    if (hookStates[hookIndex]) {
-    +      let[lastMemo, lastDeps] = hookStates[hookIndex];
-    +      let same = deps.every((item, index) => item === lastDeps[index]);
-    +      if (same) {
-      +        hookIndex++;
-      +        return lastMemo;
-      +      } else {
-      +        let newMemo = factory();
-      +        hookStates[hookIndex++]=[newMemo, deps];
-      +        return newMemo;
-      +      }
-    +    } else {
-    +      let newMemo = factory();
-    +      hookStates[hookIndex++]=[newMemo, deps];
-    +      return newMemo;
-    +    }
++function useContext(context) {
+  +  return context._currentValue;
   +}
-+export function useCallback(callback, deps) {
-  +    if (hookStates[hookIndex]) {
-    +      let[lastCallback, lastDeps] = hookStates[hookIndex];
-    +      let same = deps.every((item, index) => item === lastDeps[index]);
-    +      if (same) {
-      +        hookIndex++;
-      +        return lastCallback;
-      +      } else {
-      +        hookStates[hookIndex++]=[callback, deps];
-      +        return callback;
-      +      }
-    +    } else {
-    +      hookStates[hookIndex++]=[callback, deps];
-    +      return callback;
-    +    }
-  +}
-const ReactDOM = {
-  render
-};
-export default ReactDOM;
+
+/*   接收一个 context 对象（React.createContext 的返回值）并返回该 context 的当前值
+当前的 context 值由上层组件中距离当前组件最近的 < MyContext.Provider > 的 value prop 决定
+当组件上层最近的 < MyContext.Provider > 更新时，该 Hook 会触发重渲染，并使用最新传递给 MyContext provider 的 context value 值
+useContext(MyContext) 相当于 class 组件中的 static contextType = MyContext 或者 < MyContext.Consumer >
+  useContext(MyContext) 只是让你能够读取 context 的值以及订阅 context 的变化。你仍然需要在上层组件树中使用 < MyContext.Provider > 来为下层组件提供 context */
