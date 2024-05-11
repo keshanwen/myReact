@@ -91,6 +91,29 @@ export function useContext(context) {
   return context._currentValue
 }
 
+
+export function useEffect(callback, dependencies) {
+  let currentIndex = hookIndex
+  if (hookStates[hookIndex]) {
+    let [destory, lastDeps] = hookStates[hookIndex]
+    let same = dependencies && dependencies.every((item, index) => item === lastDeps[index])
+    if (same) {
+      hookIndex++
+    } else {
+      destory && destory()
+      setTimeout(() => {
+        hookStates[currentIndex] = [callback(), dependencies]
+      })
+      hookIndex++
+    }
+  } else {
+    setTimeout(() => {
+      hookStates[currentIndex] = [callback(),dependencies]
+    })
+    hookIndex++
+  }
+}
+
 export function mount(vdom, container) {
   let newDom = createDOM(vdom)
   if (newDom) {
