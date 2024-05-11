@@ -114,6 +114,33 @@ export function useEffect(callback, dependencies) {
   }
 }
 
+export function useLayoutEffect(callback, dependencies) {
+  let currentIndex = hookIndex
+  if (hookStates[currentIndex]) {
+    let [destory, lastDeps] = hookStates[currentIndex]
+    let same = dependencies && dependencies.every((item, index) => item === lastDeps[index])
+    if (same) {
+      hookIndex++
+    } else {
+      destory && destory()
+      queueMicrotask(() => {
+        hookStates[currentIndex] = [callback(), dependencies]
+      })
+      hookIndex++
+    }
+  } else {
+    queueMicrotask(() => {
+      hookStates[currentIndex] = [callback(), dependencies]
+    })
+    hookIndex++
+  }
+}
+
+export function useRef(initialState) {
+  hookStates[hookIndex] = hookStates[hookIndex] || { current: initialState }
+  return hookStates[hookIndex++]
+}
+
 export function mount(vdom, container) {
   let newDom = createDOM(vdom)
   if (newDom) {
